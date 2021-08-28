@@ -1,5 +1,6 @@
 package cc.openhome;
 
+import java.io.*;
 import java.util.*;
 import java.lang.*;
 import javax.swing.*;
@@ -13,19 +14,29 @@ class Scores{
 	Image image;
 }	
 
+class Problem {
+	String mainText;
+	String left;
+	int [] dVL = new int [4];
+	String right;
+	int [] dVR = new int [4];
+}
+
 public class Board extends JPanel implements ActionListener{
 
-	Scores wealth;
-	Scores status;
-	Scores opinion;
-	Scores mood;
+	Scores [] scores;
+	Problem [] problems = new Problem[30];
+	private int whichEvent=0;
 
-	private Image gameOver;
+	private JTextArea centralT;
+	private JTextArea leftT;
+	private JTextArea rightT;
+
+	private Image [] gameOver=new Image[4];
 	
-	private JButton start;
-	private JButton innocent;
-	private JButton misdemeanor;
-        private JButton felony;
+	private JButton startB;
+	private JButton leftB;
+        private JButton rightB;
 	private int isGame=0;
 
 	public Board(){
@@ -39,23 +50,30 @@ public class Board extends JPanel implements ActionListener{
 	}
 
 	private void initGame(){
-		wealth = new Scores();
-		status = new Scores();
-		opinion = new Scores();
-		mood = new Scores();
+		scores = new Scores[4];
+		for(int i=0 ; i<4 ; i++){
+			scores[i]=new Scores();
+		}
 
 		setLayout(null);
 		setPreferredSize(new Dimension(500, 700));       
 		loadImage();
 		
-		
+		try{
+			loadEvent();
+		}
+		catch(IOException ex){
+			ex.printStackTrace();
+			System.out.println("IOException");
+		}
+
 		initValue();
 		initLabel();
 		initButton();
-		start.addActionListener(this);
-		innocent.addActionListener(this);
-		misdemeanor.addActionListener(this);
-		felony.addActionListener(this);
+		initTextArea();
+		startB.addActionListener(this);
+		leftB.addActionListener(this);
+		rightB.addActionListener(this);
 
 		
 		
@@ -63,63 +81,152 @@ public class Board extends JPanel implements ActionListener{
 
 	}
 
-	private void loadImage() {
 
-       		ImageIcon ii= new ImageIcon("image/money.png");
-	        wealth.image = ii.getImage();
-       		ii= new ImageIcon("image/status.png");
-	        status.image = ii.getImage();
-       		ii= new ImageIcon("image/opinion.png");
-	        opinion.image = ii.getImage();
-       		ii= new ImageIcon("image/mood.png");
-	        mood.image = ii.getImage();
-		ii=new ImageIcon("image/gameOver.png");
-		gameOver=ii.getImage();
+	private void loadImage() {
+		ImageIcon ii;
+		for(int i=0 ; i<4 ; i++){
+       			ii= new ImageIcon("image/"+i+".png");
+			scores[i].image=ii.getImage();
+		}
+		for(int i=0 ; i<4 ; i++){
+			ii=new ImageIcon("image/gameOver"+i+".png");
+			gameOver[i]=ii.getImage();
+		}
 
     	}
 
+	private void loadEvent() throws IOException {
+
+			FileReader fr = new FileReader("jj.txt");
+			BufferedReader br = new BufferedReader(fr);
+			int i=0;
+			String [] sp;
+			while (br.ready()) {
+				problems[i]=new Problem();
+				String tem;
+				tem=br.readLine();
+				problems[i].mainText=tem;
+				//	System.out.println(p[i].mainText);
+
+				tem=br.readLine();
+				sp=tem.split("\\s+");
+				problems[i].left=sp[0];
+				//	System.out.println(p[i].left);
+
+				for(int j=0 ; j<4 ; j++){
+					problems[i].dVL[j]=Integer.valueOf(sp[j+1]);
+					//				System.out.println(problems[i].dVL[j]);
+				}
+
+				tem=br.readLine();
+				sp=tem.split("\\s+");
+				problems[i].right=sp[0];
+				//			System.out.println(p[i].right);
+				for(int j=0 ; j<4 ; j++){
+					problems[i].dVR[j]=Integer.valueOf(sp[j+1]);
+					//				System.out.println(p[i].dVR[j]);
+				}	
+				i++;	
+			}
+			fr.close();
+			br.close();
+		
+
+	}
+
 	private void initValue(){
-		wealth.value=0;
-		opinion.value=0;
-		status.value=0;
-                mood.value=0;
+		for(int i=0 ; i<4 ; i++){
+			scores[i].value=100;
+		}
 		
 	}
 
 	private void initButton(){
-		start=new JButton("開始遊戲");
-		innocent  =new JButton("無罪");
-		misdemeanor  =new JButton("輕判");
-		felony  =new JButton("重判");
+		startB=new JButton("開始遊戲");
+		leftB  =new JButton("<--");
+		rightB  =new JButton("-->");
 
-		start.setBounds(150,300,200,100);
-		innocent.setBounds( 75,550,100, 50);	
-		misdemeanor.setBounds(200,550,100, 50);
-		felony.setBounds(325,550,100, 50);
+		startB.setBounds(150,300,200,100);
+		leftB.setBounds( 75,550,100, 50);	
+		rightB.setBounds(325,550,100, 50);
 
-		add(start);
-		add(innocent);
-		add(misdemeanor);
-		add(felony);
+		add(startB);
+		add(leftB);
+		add(rightB);
 
 
 	}
 
 	private void initLabel(){
-		wealth.text =new JLabel(Integer.toString(wealth.value    )  );
-		status.text =new JLabel(Integer.toString(status.value    )  );
-		opinion.text=new JLabel(Integer.toString(opinion.value   )  );
-		mood.text   =new JLabel(Integer.toString(mood.value      )  );
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text=new JLabel(Integer.toString(scores[i].value));
+		}
 
-		wealth .text.setBounds( 75,0,100,50);
-		status .text.setBounds(200,0,100,50);
-		opinion.text.setBounds(325,0,100,50);
-		mood   .text.setBounds(450,0,100,50);
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text.setBounds(75+125*i,0,100,50);
+		}	
 		
-		add(wealth .text);	
-		add(status .text);	
-		add(opinion.text);	
-		add(mood   .text);
+		for(int i=0 ; i<4 ; i++){
+			add(scores[i].text);
+		}
+
+	}
+
+	private void initTextArea(){
+
+		centralT = new JTextArea();
+		centralT.setBounds(0,100,500,300);		
+		centralT.setEditable(false);
+		centralT.setLineWrap(true);//自動換行
+		centralT.setFont(centralT.getFont().deriveFont(16f));//設定文字大小
+				
+		
+		leftT = new JTextArea();
+		leftT.setBounds(0,450,250,100);			
+		leftT.setEditable(false);
+		leftT.setLineWrap(true);
+		leftT.setFont(leftT.getFont().deriveFont(16f));
+
+		
+		rightT = new JTextArea();
+		rightT.setBounds(250,450,250,100);		
+		rightT.setEditable(false);
+		rightT.setLineWrap(true);
+		rightT.setFont(rightT.getFont().deriveFont(16f));
+
+		
+		add(centralT);
+		add(leftT);
+		add(rightT);
+	//	try{
+			showText();
+	//	}
+	//	catch(InterruptedException e) {   
+	//		System.out.println("sleep Exception !");
+	//	}
+
+	}
+
+	private void showText()/* throws InterruptedException*/{
+
+		centralT.setText("");
+		for(int i=0 ; i<problems[whichEvent].mainText.length() ; i++){
+			centralT.append(""+problems[whichEvent].mainText.charAt(i));
+			//Thread.sleep(100);
+		}	
+
+		leftT.setText("");
+		for(int i=0 ; i<problems[whichEvent].left.length() ; i++){
+			leftT.append(""+problems[whichEvent].left.charAt(i));	
+			//Thread.sleep(100);
+		}
+
+		rightT.setText("");
+		for(int i=0 ; i<problems[whichEvent].right.length() ; i++){
+			rightT.append(""+problems[whichEvent].right.charAt(i));	
+	//		Thread.sleep(100);
+			
+		}
 
 	}
 
@@ -156,43 +263,49 @@ public class Board extends JPanel implements ActionListener{
 	private void paintInGame(Graphics g){
 		showValue();
 	
-		g.drawImage(wealth .image ,   0 , 0 , null);
-		g.drawImage(status .image , 125 , 0 , null);
-		g.drawImage(opinion.image , 250 , 0 , null);
-		g.drawImage(mood   .image , 375 , 0 , null);
+		for(int i=0 ; i<4 ; i++){
+			g.drawImage(scores[i].image , 125*i , 0 , null);
+		}
 	}
 
 
 	private void paintGameOver(Graphics g){
-		g.drawImage(gameOver,0,0,null);	
+		for(int i=0 ; i<4 ; i++){
+			if(scores[i].value<0){
+				g.drawImage(gameOver[i],0,0,null);	
+				break;
+			}		
+		}
 	}
 
 	private void paintInit(Graphics g){
 		clear();
-		start.setVisible(true);
+		startB.setVisible(true);
 	}
 
 
 	@Override
  	public void actionPerformed(ActionEvent e){
 
-		if(e.getSource() == misdemeanor){
-			wealth.value=0;
-
+		if(e.getSource() == leftB){
+			for(int i=0 ; i<4 ; i++){
+				scores[i].value+=problems[whichEvent].dVL[i];
+			}	
+			nextProblem();
 		}
-		if(e.getSource() == innocent){
-			wealth.value=777;
-		}
-		if(e.getSource() == felony){
-
+		if(e.getSource() == rightB){
+			for(int i=0 ; i<4 ; i++){
+				scores[i].value+=problems[whichEvent].dVR[i];
+			}
+			nextProblem();
 		}	
-		if(e.getSource() == start){
+		if(e.getSource() == startB){
 			isGame=1;
 			inGameComponent();
 		}
 
 		showValue();
-		if(wealth.value==777){
+		if(scores[0].value<0 || scores[1].value<0 || scores[2].value<0 || scores[3].value<0){
 			isGame=-1;
 			gameOverComponent();
 		}
@@ -200,26 +313,36 @@ public class Board extends JPanel implements ActionListener{
 
 	}	
 
+	private void nextProblem(){
+		whichEvent++;	
+//		try{
+			showText();
+//		}
+//		catch(InterruptedException e) {   
+//			System.out.println("sleep Exception !");
+//		}
+	}
+
 
 	private void showValue(){
 
-		wealth .text.setText( Integer.toString(wealth .value   ));	
-		opinion.text.setText( Integer.toString(opinion.value   ));
-		status .text.setText( Integer.toString(status .value   ));
-		mood   .text.setText( Integer.toString(mood   .value   ));
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text.setText( Integer.toString(scores[i].value));
+		}
 
 	}
 
 	private void inGameComponent(){
 		
 		clear();
-		wealth .text.setVisible(true);
-		status .text.setVisible(true);
-		opinion.text.setVisible(true);
-		mood   .text.setVisible(true);
-		innocent.setVisible(true);
-		misdemeanor.setVisible(true);
-		felony.setVisible(true);
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text.setVisible(true);
+		}
+		leftB.setVisible(true);
+		rightB.setVisible(true);
+		centralT.setVisible(true);
+		leftT.setVisible(true);
+		rightT.setVisible(true);
 
 	}
 
@@ -230,14 +353,15 @@ public class Board extends JPanel implements ActionListener{
 
 	
 	private void clear(){
-		wealth .text.setVisible(false);
-		status .text.setVisible(false);
-		opinion.text.setVisible(false);
-		mood   .text.setVisible(false);
-		start.setVisible(false);
-		innocent.setVisible(false);
-		misdemeanor.setVisible(false);
-		felony.setVisible(false);
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text.setVisible(false);
+		}
+		startB.setVisible(false);
+		leftB.setVisible(false);
+		rightB.setVisible(false);
+		centralT.setVisible(false);
+		leftT.setVisible(false);
+		rightT.setVisible(false);
 	}
 
 		
