@@ -11,7 +11,7 @@ import java.awt.event.*;
 class Scores{
 	int value;
 	JLabel text;
-	Image image;
+	JLabel image;
 }	
 
 class Problem {
@@ -21,6 +21,7 @@ class Problem {
 	String right;
 	int [] dVR = new int [4];
 }
+
 
 class ShowText extends Thread{
 	JTextArea t0;
@@ -80,22 +81,22 @@ class ShowText extends Thread{
 public class Board extends JPanel implements ActionListener{
 
 	ShowText s;
-	Scores [] scores;
+	Scores [] scores = new Scores[4];
 	Problem [] problems = new Problem[30];
-	private int whichEvent=0;
+	private int whichProblem;
 
 	private JTextArea centralT;
 	private JTextArea leftT;
 	private JTextArea rightT;
 
-	private Image [] gameOver=new Image[4];
-	private Image win;
+	private JLabel [] gameOver=new JLabel[4];
+	private JLabel win;
 	
 	
 	private JButton startB;
 	private JButton leftB;
         private JButton rightB;
-	private int isGame=0;
+	private JButton restartB;
 
 	public Board(){
 
@@ -108,13 +109,12 @@ public class Board extends JPanel implements ActionListener{
 	}
 
 	private void initGame(){
-		scores = new Scores[4];
-		for(int i=0 ; i<4 ; i++){
-			scores[i]=new Scores();
-		}
+		
+		
 
 		setLayout(null);
 		setPreferredSize(new Dimension(500, 700));       
+		initScores();
 		loadImage();
 		
 		try{
@@ -132,10 +132,11 @@ public class Board extends JPanel implements ActionListener{
 		startB.addActionListener(this);
 		leftB.addActionListener(this);
 		rightB.addActionListener(this);
-
+		restartB.addActionListener(this);
 		
 		
-//		repaint();
+		initGameComponent();	
+		
 
 	}
 
@@ -144,14 +145,14 @@ public class Board extends JPanel implements ActionListener{
 		ImageIcon ii;
 		for(int i=0 ; i<4 ; i++){
        			ii= new ImageIcon("image/"+i+".png");
-			scores[i].image=ii.getImage();
+			scores[i].image=new JLabel(ii);
 		}
 		for(int i=0 ; i<4 ; i++){
 			ii=new ImageIcon("image/gameOver"+i+".png");
-			gameOver[i]=ii.getImage();
+			gameOver[i]=new JLabel(ii);
 		}
-		ii=new ImageIcon("image/win.git");
-		win=ii.getImage();
+		ii=new ImageIcon("image/win.gif") ;
+		win=new JLabel(ii);
 
     	}
 
@@ -194,10 +195,19 @@ public class Board extends JPanel implements ActionListener{
 
 	}
 
+	private void initScores(){
+		
+		for(int i=0 ; i<4 ; i++){
+			scores[i]=new Scores();
+		}
+
+	}
+
 	private void initValue(){
 		for(int i=0 ; i<4 ; i++){
 			scores[i].value=100;
 		}
+		whichProblem=0;
 		
 	}
 
@@ -205,31 +215,44 @@ public class Board extends JPanel implements ActionListener{
 		startB=new JButton("開始遊戲");
 		leftB  =new JButton("<--");
 		rightB  =new JButton("-->");
+		restartB=new JButton("重新開始");
 
 		startB.setBounds(150,300,200,100);
 		leftB.setBounds( 75,550,100, 50);	
 		rightB.setBounds(325,550,100, 50);
+		restartB.setBounds(200,550,100,50);
 
 		add(startB);
 		add(leftB);
 		add(rightB);
+		add(restartB);
 
 
 	}
 
 	private void initLabel(){
-		for(int i=0 ; i<4 ; i++){
-			scores[i].text=new JLabel(Integer.toString(scores[i].value));
-		}
 
 		for(int i=0 ; i<4 ; i++){
+			scores[i].text=new JLabel();
 			scores[i].text.setBounds(75+125*i,0,100,50);
-		}	
-		
-		for(int i=0 ; i<4 ; i++){
 			add(scores[i].text);
 		}
 
+
+		win.setBounds(75,100,350,400);	
+		add(win);
+		for(int i=0 ; i<4 ; i++){
+			gameOver[i].setBounds(75,100,350,400);
+			add(gameOver[i]);
+		}
+
+		for(int i=0 ; i<4 ; i++){
+			scores[i].image.setBounds(125*i,0,50,50);
+			add(scores[i].image);
+		}
+
+
+		
 	}
 
 	private void initTextArea(){
@@ -258,81 +281,22 @@ public class Board extends JPanel implements ActionListener{
 		add(centralT);
 		add(leftT);
 		add(rightT);
-	//	try{
-			showText();
-	//	}
-	//	catch(InterruptedException e) {   
-	//		System.out.println("sleep Exception !");
-	//	}
 
 	}
 
-	private void showText()/* throws InterruptedException*/{
+	private void showText(){
+
 		centralT.setText("");
 		leftT.setText("");
 		rightT.setText("");
-		s = new ShowText(centralT,leftT,rightT,problems[whichEvent].mainText,problems[whichEvent].left,problems[whichEvent].right);
+		s = new ShowText(centralT,leftT,rightT,problems[whichProblem].mainText,problems[whichProblem].left,problems[whichProblem].right);
 		s.start();	
 
 	
 
 	}
 
-	@Override
-	public void paintComponent(Graphics g) {
 
-		super.paintComponent(g);
-
-		doDrawing(g);
-	}
-
-	
-
-	private void doDrawing(Graphics g) {
-		drawImage(g);	
-	
-	}	
-
-	private void drawImage(Graphics g){
-		if(isGame==1){
-			paintInGame(g);
-		}
-		else
-			if(isGame==-1){
-				paintGameOver(g);	
-			}
-			else
-				if(isGame==0){
-					paintInit(g);	
-				}
-	}
-
-
-	private void paintInGame(Graphics g){
-		showValue();
-	
-		for(int i=0 ; i<4 ; i++){
-			g.drawImage(scores[i].image , 125*i , 0 , null);
-		}
-	}
-
-
-	private void paintGameOver(Graphics g){
-		for(int i=0 ; i<4 ; i++){
-			if(scores[i].value<0){
-				g.drawImage(gameOver[i],0,0,null);	
-				break;
-			}		
-		}
-		if(whichEvent>23){
-			g.drawImage(win,0,0,null);
-		}
-	}
-
-	private void paintInit(Graphics g){
-		clear();
-		startB.setVisible(true);
-	}
 
 
 	@Override
@@ -340,38 +304,40 @@ public class Board extends JPanel implements ActionListener{
 
 		if(e.getSource() == leftB){
 			for(int i=0 ; i<4 ; i++){
-				scores[i].value+=problems[whichEvent].dVL[i];
+				scores[i].value+=problems[whichProblem].dVL[i];
 			}	
 			s.isContinue=false;		
 			nextProblem();
 		}
 		if(e.getSource() == rightB){
 			for(int i=0 ; i<4 ; i++){
-				scores[i].value+=problems[whichEvent].dVR[i];
+				scores[i].value+=problems[whichProblem].dVR[i];
 			}
 			s.isContinue=false;		
 			nextProblem();
 		}	
 		if(e.getSource() == startB){
-			isGame=1;
+			inGameComponent();
+		}
+		if(e.getSource() == restartB){
+			clear();
+			initValue();
 			inGameComponent();
 		}
 
 		showValue();
 		if(scores[0].value<0 || scores[1].value<0 || scores[2].value<0 || scores[3].value<0){
 			s.isContinue=false;		
-			isGame=-1;
 			gameOverComponent();
 		}
-		repaint();
+
 
 	}	
 
 	private void nextProblem(){
-		whichEvent++;	
-		if(whichEvent>23){
+		whichProblem++;	
+		if(whichProblem>23){
 			s.isContinue=false;		
-			isGame=-1;
 			gameOverComponent();
 		}
 		else{
@@ -388,22 +354,48 @@ public class Board extends JPanel implements ActionListener{
 
 	}
 
+	private void initGameComponent(){
+		clear();
+		startB.setVisible(true);
+	}
+
 	private void inGameComponent(){
 		
 		clear();
 		for(int i=0 ; i<4 ; i++){
 			scores[i].text.setVisible(true);
+			scores[i].image.setVisible(true);
 		}
 		leftB.setVisible(true);
 		rightB.setVisible(true);
 		centralT.setVisible(true);
 		leftT.setVisible(true);
 		rightT.setVisible(true);
+		showValue();	
+		showText();
 
 	}
 
 	private void gameOverComponent(){	
 		clear();	
+		for(int i=0 ; i<4 ; i++){
+			scores[i].text.setVisible(true);
+			scores[i].image.setVisible(true);
+		}
+		
+		for(int i=0 ; i<4 ; i++){
+			
+			if(scores[i].value<0){
+				gameOver[i].setVisible(true);	
+				break;
+			}		
+		}
+
+		if(whichProblem>23){
+			win.setVisible(true);
+		}
+
+		restartB.setVisible(true);
 	}
 
 
@@ -411,13 +403,19 @@ public class Board extends JPanel implements ActionListener{
 	private void clear(){
 		for(int i=0 ; i<4 ; i++){
 			scores[i].text.setVisible(false);
+			scores[i].image.setVisible(false);
+		}
+		for(int i=0 ; i<4 ; i++){
+			gameOver[i].setVisible(false);
 		}
 		startB.setVisible(false);
 		leftB.setVisible(false);
 		rightB.setVisible(false);
+		restartB.setVisible(false);
 		centralT.setVisible(false);
 		leftT.setVisible(false);
 		rightT.setVisible(false);
+		win.setVisible(false);
 	}
 
 		
