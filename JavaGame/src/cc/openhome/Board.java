@@ -157,7 +157,7 @@ public class Board extends JPanel implements ActionListener{
     	}
 
 	private void loadEvent() throws IOException {
-
+			System.setProperty("file.encoding", "UTF-8");
 			FileReader fr = new FileReader("jj.txt");
 			BufferedReader br = new BufferedReader(fr);
 			int i=0;
