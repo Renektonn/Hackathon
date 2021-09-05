@@ -31,6 +31,7 @@ class ShowText extends Thread{
 	String s1;
 	String s2;
 	public Boolean isContinue=true;
+	public Boolean skip=false;
 	public ShowText(JTextArea t0 , JTextArea t1 , JTextArea t2 , String s0 , String s1 , String s2){
 		this.t0=t0;
 		this.t1=t1;
@@ -44,9 +45,13 @@ class ShowText extends Thread{
 	public void run(){
 		for(int i=0 ; i<s0.length() ; i++){
 			if(!isContinue) break;
+			if(skip){
+				t0.append(s0.substring(i,s0.length() ) );
+				break;
+			}
 			t0.append(""+s0.charAt(i));
 			try {
-				sleep(150);
+				sleep(100);
 			}
 			catch(InterruptedException e) {   
 				System.out.println("sleep Exception !");
@@ -55,9 +60,13 @@ class ShowText extends Thread{
 
 		for(int i=0 ; i<s1.length() ; i++){
 			if(!isContinue) break;
+			if(skip){
+				t1.append(s1.substring(i,s1.length() ) );
+				break;
+			}
 			t1.append(""+s1.charAt(i));
 			try {
-				sleep(150);
+				sleep(100);
 			}
 			catch(InterruptedException e) {   
 				System.out.println("sleep Exception !");
@@ -67,6 +76,10 @@ class ShowText extends Thread{
 		
 		for(int i=0 ; i<s2.length() ; i++){
 			if(!isContinue) break;
+			if(skip){
+				t2.append(s2.substring(i,s2.length() ) );
+				break;
+			}
 			t2.append(""+s2.charAt(i));
 			try {
 				sleep(150);
@@ -78,12 +91,13 @@ class ShowText extends Thread{
 	}
 }
 
-public class Board extends JPanel implements ActionListener{
+public class Board extends JPanel implements ActionListener,MouseListener{
 
 	ShowText s;
 	Scores [] scores = new Scores[4];
 	Problem [] problems = new Problem[30];
 	private int whichProblem;
+	private int allProblem;
 
 	private JTextArea centralT;
 	private JTextArea leftT;
@@ -118,17 +132,19 @@ public class Board extends JPanel implements ActionListener{
 		loadImage();
 		
 		try{
-			loadEvent();
+			loadProblems();
 		}
 		catch(IOException ex){
 			ex.printStackTrace();
 			System.out.println("IOException");
 		}
+		problemsBecomeRandom();
 
 		initValue();
 		initLabel();
 		initButton();
 		initTextArea();
+		addMouseListener(this);
 		startB.addActionListener(this);
 		leftB.addActionListener(this);
 		rightB.addActionListener(this);
@@ -156,44 +172,61 @@ public class Board extends JPanel implements ActionListener{
 
     	}
 
-	private void loadEvent() throws IOException {
-			System.setProperty("file.encoding", "UTF-8");
-			FileReader fr = new FileReader("jj.txt");
-			BufferedReader br = new BufferedReader(fr);
-			int i=0;
-			String [] sp;
-			while (br.ready()) {
-				problems[i]=new Problem();
-				String tem;
-				tem=br.readLine();
-				problems[i].mainText=tem;
-				//	System.out.println(p[i].mainText);
+	private void loadProblems() throws IOException {
+		System.setProperty("file.encoding", "UTF-8");
 
-				tem=br.readLine();
-				sp=tem.split("\\s+");
-				problems[i].left=sp[0];
-				//	System.out.println(p[i].left);
+		FileReader fr = new FileReader("jj.txt");
+		BufferedReader br = new BufferedReader(fr);
+		int i=0;
+		String [] sp;
+		while (br.ready()) {
+			problems[i]=new Problem();
+			String tem;
+			tem=br.readLine();
+			problems[i].mainText=tem;
+			//	System.out.println(p[i].mainText);
 
-				for(int j=0 ; j<4 ; j++){
-					problems[i].dVL[j]=Integer.valueOf(sp[j+1]);
-					//				System.out.println(problems[i].dVL[j]);
-				}
+			tem=br.readLine();
+			sp=tem.split("\\s+");
+			problems[i].left=sp[0];
+			//	System.out.println(p[i].left);
 
-				tem=br.readLine();
-				sp=tem.split("\\s+");
-				problems[i].right=sp[0];
-				//			System.out.println(p[i].right);
-				for(int j=0 ; j<4 ; j++){
-					problems[i].dVR[j]=Integer.valueOf(sp[j+1]);
-					//				System.out.println(p[i].dVR[j]);
-				}	
-				i++;	
+			for(int j=0 ; j<4 ; j++){
+				problems[i].dVL[j]=Integer.valueOf(sp[j+1]);
+				//				System.out.println(problems[i].dVL[j]);
 			}
-			fr.close();
-			br.close();
-		
+
+			tem=br.readLine();
+			sp=tem.split("\\s+");
+			problems[i].right=sp[0];
+			//			System.out.println(p[i].right);
+			for(int j=0 ; j<4 ; j++){
+				problems[i].dVR[j]=Integer.valueOf(sp[j+1]);
+				//				System.out.println(p[i].dVR[j]);
+			}	
+			i++;	
+		}
+		allProblem=i;
+		fr.close();
+		br.close();
+
 
 	}
+
+	private void problemsBecomeRandom(){
+		int [] random=new int [allProblem];
+		for(int i=allProblem-1 ; i>=0 ; i--){
+			int rand=(int) (Math.random()*(i+1));//[0,i+1)==[0,i]
+			Problem tem = problems[i];
+			problems[i]=problems[rand];
+			problems[rand]=tem;
+
+		}
+	}
+
+//	private void swapP(Problem a , Problem b){
+//		
+//	}
 
 	private void initScores(){
 		
@@ -213,8 +246,8 @@ public class Board extends JPanel implements ActionListener{
 
 	private void initButton(){
 		startB=new JButton("開始遊戲");
-		leftB  =new JButton("<--");
-		rightB  =new JButton("-->");
+		leftB  =new JButton("⇦");
+		rightB  =new JButton("⇨");
 		restartB=new JButton("重新開始");
 
 		startB.setBounds(150,300,200,100);
@@ -261,7 +294,7 @@ public class Board extends JPanel implements ActionListener{
 		centralT.setBounds(0,100,500,300);		
 		centralT.setEditable(false);
 		centralT.setLineWrap(true);//自動換行
-		centralT.setFont(centralT.getFont().deriveFont(16f));//設定文字大小
+		centralT.setFont(centralT.getFont().deriveFont(23f));//設定文字大小
 				
 		
 		leftT = new JTextArea();
@@ -297,7 +330,22 @@ public class Board extends JPanel implements ActionListener{
 	}
 
 
-
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		s.skip=true;
+	}
+	@Override
+	public void mousePressed(MouseEvent e) {
+	}
+	@Override
+	public void mouseReleased(MouseEvent e) {
+	}
+	@Override
+	public void mouseEntered(MouseEvent e) {
+	}
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
 
 	@Override
  	public void actionPerformed(ActionEvent e){
@@ -323,10 +371,11 @@ public class Board extends JPanel implements ActionListener{
 			clear();
 			initValue();
 			inGameComponent();
+			problemsBecomeRandom();
 		}
 
 		showValue();
-		if(scores[0].value<0 || scores[1].value<0 || scores[2].value<0 || scores[3].value<0){
+		if(scores[0].value<=0 || scores[1].value<=0 || scores[2].value<=0 || scores[3].value<=0){
 			s.isContinue=false;		
 			gameOverComponent();
 		}
@@ -336,7 +385,7 @@ public class Board extends JPanel implements ActionListener{
 
 	private void nextProblem(){
 		whichProblem++;	
-		if(whichProblem>23){
+		if(!(whichProblem<allProblem)){
 			s.isContinue=false;		
 			gameOverComponent();
 		}
@@ -385,13 +434,13 @@ public class Board extends JPanel implements ActionListener{
 		
 		for(int i=0 ; i<4 ; i++){
 			
-			if(scores[i].value<0){
+			if(scores[i].value<=0){
 				gameOver[i].setVisible(true);	
 				break;
 			}		
 		}
 
-		if(whichProblem>23){
+		if(!(whichProblem<allProblem)){
 			win.setVisible(true);
 		}
 
